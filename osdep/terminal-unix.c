@@ -25,6 +25,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <assert.h>
 
@@ -258,6 +259,7 @@ read_more: ;  /* need more bytes */
 static volatile int getch2_active  = 0;
 static volatile int getch2_enabled = 0;
 static bool read_terminal;
+static volatile int bg_polling = 0;
 
 static void enable_kx(bool enable)
 {
@@ -357,6 +359,32 @@ static void continue_sighandler(int signum)
     setsigaction(SIGTSTP, stop_sighandler, SA_RESETHAND, false);
 
     getch2_poll();
+}
+
+static void background_input_sighandler(int signum)
+{
+    if (bg_polling)
+        return;
+
+    struct timeval timeval;
+    timeval.tv_sec = 0;
+    timeval.tv_usec = 10000;
+    struct itimerval itimerval = {
+        .it_interval = timeval,
+        .it_value = timeval
+    };
+    setitimer(ITIMER_REAL, &itimerval, NULL);
+    bg_polling = 1;
+}
+
+static void alarm_sighandler(int signum)
+{
+    // Disable input buffering when mpv is put in the foreground.
+    if (tcgetpgrp(tty_in) == getpgrp()) {
+        do_activate_getch2();
+        bg_polling = 0;
+        setitimer(ITIMER_REAL, NULL, NULL);
+    }
 }
 
 static pthread_t input_thread;
@@ -461,6 +489,7 @@ void terminal_uninit(void)
     setsigaction(SIGINT,  SIG_DFL, 0, false);
     setsigaction(SIGQUIT, SIG_DFL, 0, false);
     setsigaction(SIGTERM, SIG_DFL, 0, false);
+    setsigaction(SIGALRM, SIG_DFL, 0, false);
     setsigaction(SIGTTIN, SIG_DFL, 0, false);
     setsigaction(SIGTTOU, SIG_DFL, 0, false);
 
@@ -507,7 +536,8 @@ void terminal_init(void)
     // handlers to fix terminal settings
     setsigaction(SIGCONT, continue_sighandler, 0, true);
     setsigaction(SIGTSTP, stop_sighandler, SA_RESETHAND, false);
-    setsigaction(SIGTTIN, SIG_IGN, 0, true);
+    setsigaction(SIGALRM, alarm_sighandler, 0, true);
+    setsigaction(SIGTTIN, background_input_sighandler, 0, true);
     setsigaction(SIGTTOU, SIG_IGN, 0, true);
 
     getch2_poll();
