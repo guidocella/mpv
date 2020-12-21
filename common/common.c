@@ -250,7 +250,8 @@ bool mp_append_escaped_string_noalloc(void *talloc_ctx, bstr *dst, bstr *src)
     bstr t = *src;
     int cur = 0;
     while (1) {
-        if (cur >= t.len || t.start[cur] == '"') {
+        // TODO: fix nested quotes of the other type
+        if (cur >= t.len || t.start[cur] == '"' || t.start[cur] == '\'') {
             *src = bstr_cut(t, cur);
             t = bstr_splice(t, 0, cur);
             if (dst->start == NULL) {

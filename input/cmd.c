@@ -341,6 +341,17 @@ static int pctx_read_token(struct parse_ctx *ctx, bstr *out)
         }
         return 1;
     }
+    if (bstr_eatstart0(&ctx->str, "'")) {
+        if (!mp_append_escaped_string_noalloc(ctx->tmp, out, &ctx->str)) {
+            MP_ERR(ctx, "Broken string escapes: ...>%.*s<.\n", BSTR_P(start));
+            return -1;
+        }
+        if (!bstr_eatstart0(&ctx->str, "'")) {
+            MP_ERR(ctx, "Unterminated quotes: ...>%.*s<.\n", BSTR_P(start));
+            return -1;
+        }
+        return 1;
+    }
     return read_token(ctx->str, &ctx->str, out) ? 1 : 0;
 }
 

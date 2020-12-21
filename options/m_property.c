@@ -288,6 +288,7 @@ static int expand_property(const struct m_property *prop_list, char **ret,
 char *m_properties_expand_string(const struct m_property *prop_list,
                                  const char *str0, void *ctx)
 {
+    // TODO: don't expand if surrounded by '
     char *ret = NULL;
     int ret_len = 0;
     bool skip = false;
