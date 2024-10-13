@@ -787,6 +787,8 @@ local function handle_enter()
         return
     end
 
+    line = line:match('^%s*(.-)%s*$')
+
     if line == '' and input_caller == nil then
         return
     end
