@@ -191,10 +191,10 @@ typedef struct MPOpts {
     char **script_files;
     char **script_opts;
     bool js_memory_report;
-    bool lua_load_osc;
-    bool lua_load_ytdl;
     char *lua_ytdl_format;
     char **lua_ytdl_raw_options;
+    bool lua_load_osc;
+    bool lua_load_ytdl;
     bool lua_load_stats;
     bool lua_load_console;
     int lua_load_auto_profiles;
@@ -202,6 +202,7 @@ typedef struct MPOpts {
     bool lua_load_positioning;
     bool lua_load_commands;
     bool lua_load_context_menu;
+    char **builtin_scripts;
 
     bool auto_load_scripts;
 
